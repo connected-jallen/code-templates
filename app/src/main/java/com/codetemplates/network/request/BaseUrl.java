@@ -6,7 +6,7 @@ import android.support.annotation.NonNull;
 import java.util.Map;
 
 /**
- * Server URL and common parameters/headers. Used by VideaHttpRequestBase to create HTTP request.
+ * Server URL and common parameters/headers. Used by VolleyRequestBase to create HTTP request.
  */
 public interface BaseUrl {
 
