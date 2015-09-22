@@ -1,0 +1,150 @@
+buildscript {
+    repositories {
+        maven { url 'https://maven.fabric.io/public' }
+    }
+
+    dependencies {
+        classpath 'io.fabric.tools:gradle:1.19.2'
+    }
+}
+apply plugin: 'com.android.application'
+apply plugin: 'io.fabric'
+
+repositories {
+    maven { url 'https://maven.fabric.io/public' }
+}
+
+android {
+
+    compileSdkVersion 22
+    buildToolsVersion "22.0.1"
+
+    Properties localProperties = new Properties()
+    localProperties.load(project.rootProject.file('local.properties').newDataInputStream())
+
+    def versionMajor = localProperties.get('versionMajor', '0')
+    def versionMinor = localProperties.get('versionMinor', '1')
+    // Note: When not using the build server ensure that wear project has same version number.
+    def versionPatch = localProperties.get('versionPatch', '0')
+    defaultConfig {
+        applicationId "com.codetemplates"
+        // minSdkVersion is set via flavor quickBuild dimension
+        targetSdkVersion 22
+        // Note: The version code should only go up to 999999 (9.99.9999) to allow for 4 digits for multiple APK
+        //       deployments in case we need them one day.
+        versionCode versionMajor.toInteger() * 100000 +
+                versionMinor.toInteger() * 1000 +
+                versionPatch.toInteger() % 1000
+        // versionName is set with flavor
+    }
+    // Add flavour to version name so that we can distinguish them in Fabric.
+    // (Modified from https://gist.github.com/keyboardsurfer/a6a5bcf2b62f9aa41ae2)
+    applicationVariants.all { variant ->
+        def versionSuffix = '-' + variant.properties['flavorName'] + '-' + variant.properties['buildType'].name;
+        if (localProperties['isSnapshot'] == 'true') {
+            versionSuffix += '-snapshot'
+        }
+
+        //def versionSuffix = '-pre-BetaRelease'
+        variant.mergedFlavor.versionName = "${versionMajor}.${versionMinor}.${versionPatch}" + versionSuffix;
+    }
+
+    packagingOptions {
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/NOTICE.txt'
+        exclude 'META-INF/DEPENDENCIES'
+    }
+
+    compileOptions {
+        encoding "UTF-8"
+        sourceCompatibility JavaVersion.VERSION_1_7
+        targetCompatibility JavaVersion.VERSION_1_7
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('../../publish_keystore_harman')
+            // Set these system properties in local.properties to use this keystore.
+            keyAlias localProperties['keyAlias']
+            keyPassword localProperties['keyPassword']
+            storePassword localProperties['storePassword']
+        }
+        debug {
+            // This key is created automatically by Android Studio.
+            storeFile file(System.properties['user.home'] + '/.android/debug.keystore')
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+            storePassword 'android'
+        }
+    }
+
+    buildTypes {
+        def commonBuildConfigs = [
+                ["int", "VOLLEY_CACHE_SIZE", '15 * 1024 * 1024'], // 15MB
+        ]
+        debug {
+            minifyEnabled false
+            // Enable multidex in debug only, as we do not minify debug mode for faster build times and stepping through
+            // code, and google play services pushes us over the 64K class limit.
+            multiDexEnabled true
+            ext.enableCrashlytics = false
+
+            // BuildConfig.java additions
+            for (config in commonBuildConfigs) {
+                buildConfigField config[0], config[1], config[2]
+            }
+        }
+        release {
+            minifyEnabled true
+            // Multidex is not enabled in release builds as the minification keeps it well below 64K.
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+            signingConfig signingConfigs.release
+            // For docs see https://dev.twitter.com/crashlytics/beta-distribution/gradle
+            ext.enableCrashlytics = true
+            ext.betaDistributionReleaseNotesFilePath = 'release-notes.txt'
+            ext.betaDistributionGroupAliasesFilePath = 'release-notification-email-groups.txt'
+
+            // BuildConfig.java additions
+            for (config in commonBuildConfigs) {
+                buildConfigField config[0], config[1], config[2]
+            }
+        }
+    }
+
+    productFlavors {
+        quick {
+            // Multidex really slows down build times, set minSdk to 21 to take advantage of speed improvements.
+            // See http://stackoverflow.com/a/30799491
+            minSdkVersion 21
+        }
+        prod {
+            minSdkVersion 15
+        }
+    }
+}
+
+dependencies {
+
+    // Note: Please use exact versions of 3rd party libraries and update manually as desired using this command:
+    //       ./gradlew dependencyUpdates -Drevision=release # See http://stackoverflow.com/a/29492062
+
+    compile fileTree(dir: 'libs', include: '*.jar')
+    compile 'com.android.support:appcompat-v7:22.2.1'
+    compile 'com.google.code.gson:gson:2.1'
+    // For Validate and ToStringBuilder
+    compile 'org.apache.commons:commons-lang3:3.1'
+    compile('com.crashlytics.sdk.android:crashlytics:2.5.2@aar') {
+        transitive = true;
+    }
+    // Volley for HTTP networking
+    compile 'com.mcxiaoke.volley:library:1.0.19'
+
+    debugCompile 'com.android.support:multidex:1.0.0'
+}
+

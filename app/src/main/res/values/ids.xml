@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="errorCode_serverError" type="id"/>
+    <item name="errorCode_noData" type="id"/>
+    <item name="errorCode_noConnection" type="id"/>
+    <item name="errorCode_onSuccessFailure" type="id"/>
+</resources>
