@@ -69,11 +69,11 @@ android {
 
     signingConfigs {
         release {
-            storeFile file('../../publish_keystore_harman')
-            // Set these system properties in local.properties to use this keystore.
-            keyAlias localProperties['keyAlias']
-            keyPassword localProperties['keyPassword']
-            storePassword localProperties['storePassword']
+            // TODO: Use real file in release.
+            storeFile file(System.properties['user.home'] + '/.android/debug.keystore')
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+            storePassword 'android'
         }
         debug {
             // This key is created automatically by Android Studio.
@@ -106,7 +106,8 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
             signingConfig signingConfigs.release
             // For docs see https://dev.twitter.com/crashlytics/beta-distribution/gradle
-            ext.enableCrashlytics = true
+            // TODO: Get Crashlytics API key and enable crashlytics
+            ext.enableCrashlytics = false
             ext.betaDistributionReleaseNotesFilePath = 'release-notes.txt'
             ext.betaDistributionGroupAliasesFilePath = 'release-notification-email-groups.txt'
 

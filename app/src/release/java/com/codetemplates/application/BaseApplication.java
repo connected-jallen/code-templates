@@ -1,4 +1,4 @@
-package com.harman.hkconnect.ui;
+package com.codetemplates.application;
 
 import android.app.Application;
 
