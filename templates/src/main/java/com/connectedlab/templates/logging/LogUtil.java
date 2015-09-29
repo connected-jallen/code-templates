@@ -2,11 +2,11 @@ package com.connectedlab.templates.logging;
 
 import android.util.Log;
 
+import com.connectedlab.templates.BuildConfig;
+
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
-
-import com.codetemplates.BuildConfig;
 
 public class LogUtil {
 
