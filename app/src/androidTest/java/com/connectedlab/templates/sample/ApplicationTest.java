@@ -1,4 +1,4 @@
-package com.codetemplates;
+package com.connectedlab.templates.sample;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;
