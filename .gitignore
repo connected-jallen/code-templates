@@ -31,8 +31,8 @@ proguard/
 
 # IntelliJ files. With gradle they will be generated when the project is first opened, and there are too many 
 # irrelevant conflicts day to day to make the committing them worthwhile.
-**/.idea
-*.iml
+#**/.idea
+#*.iml
 
 # Mac directory info.
 .DS_Store
