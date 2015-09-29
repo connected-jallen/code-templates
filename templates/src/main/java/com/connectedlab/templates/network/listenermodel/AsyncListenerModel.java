@@ -1,6 +1,6 @@
 package com.connectedlab.templates.network.listenermodel;
 
-import com.codetemplates.R;
+import com.connectedlab.templates.R;
 import com.connectedlab.templates.error.ErrorInfo;
 
 /**

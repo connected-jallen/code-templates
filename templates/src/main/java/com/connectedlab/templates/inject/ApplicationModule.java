@@ -12,6 +12,7 @@ public class ApplicationModule {
 
     private static ApplicationModule sInstance;
     private final Application mApplication;
+    private final String mLogTag;
 
     public static void setInstance(@NonNull ApplicationModule instance) {
         sInstance = instance;
@@ -19,6 +20,7 @@ public class ApplicationModule {
 
     public ApplicationModule(@NonNull Application application) {
         mApplication = application;
+        mLogTag = application.getApplicationInfo().loadLabel(application.getPackageManager()).toString();
     }
 
     public static @NonNull ApplicationModule getInstance() {
@@ -28,5 +30,9 @@ public class ApplicationModule {
 
     public @NonNull Application getApplication() {
         return mApplication;
+    }
+
+    public @NonNull String getLogTag() {
+        return mLogTag;
     }
 }

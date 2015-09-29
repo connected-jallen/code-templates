@@ -1,1 +1,1 @@
-include ':app', ':templates'
+include 'app', 'templates'

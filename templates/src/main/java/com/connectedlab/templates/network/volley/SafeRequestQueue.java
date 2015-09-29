@@ -14,7 +14,7 @@ import com.android.volley.toolbox.HttpClientStack;
 import com.android.volley.toolbox.HttpStack;
 import com.android.volley.toolbox.HurlStack;
 
-import com.codetemplates.BuildConfig;
+import com.connectedlab.templates.BuildConfig;
 import com.connectedlab.templates.logging.LogUtil;
 
 import java.io.File;

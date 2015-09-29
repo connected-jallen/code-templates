@@ -3,14 +3,13 @@ package com.connectedlab.templates.logging;
 import android.util.Log;
 
 import com.connectedlab.templates.BuildConfig;
+import com.connectedlab.templates.inject.ApplicationModule;
 
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
 
 public class LogUtil {
-
-    private static final String TAG = "CodeTemplates";
 
     /**
      * Logs to the android logger at VERBOSE level.
@@ -101,7 +100,7 @@ public class LogUtil {
         if (ex != null) {
             msg.append("\n").append(Log.getStackTraceString(ex));
         }
-        Log.println(priority, TAG, msg.toString());
+        Log.println(priority, ApplicationModule.getInstance().getLogTag(), msg.toString());
     }
 
     private static String formatStackTraceElement(StackTraceElement ste) {

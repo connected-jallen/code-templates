@@ -2,6 +2,8 @@ package com.connectedlab.templates.application;
 
 import android.support.multidex.MultiDexApplication;
 
+import com.connectedlab.templates.inject.ApplicationModule;
+
 /**
  * BaseApplication customized for debug builds.
  * Different from release builds in that it inherits from MultiDexApplication.

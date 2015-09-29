@@ -13,7 +13,7 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.HttpHeaderParser;
 
-import com.codetemplates.R;
+import com.connectedlab.templates.R;
 import com.connectedlab.templates.error.ErrorInfo;
 import com.connectedlab.templates.logging.LogUtil;
 import com.connectedlab.templates.network.listenermodel.AsyncListener;
