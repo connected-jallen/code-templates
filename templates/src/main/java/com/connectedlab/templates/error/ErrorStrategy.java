@@ -1,6 +1,6 @@
 package com.connectedlab.templates.error;
 
-import com.codetemplates.BuildConfig;
+import com.connectedlab.templates.BuildConfig;
 import com.connectedlab.templates.logging.LogUtil;
 
 /**
