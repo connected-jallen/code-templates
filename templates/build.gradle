@@ -1,0 +1,92 @@
+apply plugin: 'com.android.library'
+
+android {
+
+    compileSdkVersion 22
+    buildToolsVersion "23.0.0"
+
+    Properties localProperties = new Properties()
+    localProperties.load(project.rootProject.file('local.properties').newDataInputStream())
+
+    def versionMajor = project.VERSION_MAJOR
+    def versionMinor = localProperties.get('versionMinor', '0')
+    // Note: When not using the build server ensure that wear project has same version number.
+    def versionPatch = localProperties.get('versionPatch', '0')
+    defaultConfig {
+        minSdkVersion 14
+        targetSdkVersion 22
+        // Note: The version code should only go up to 999999 (9.99.9999) to allow for 4 digits for multiple APK
+        //       deployments in case we need them one day.
+        versionCode versionMajor.toInteger() * 100000 +
+                versionMinor.toInteger() * 1000 +
+                versionPatch.toInteger() % 1000
+        // versionName is set with libraryVariants
+    }
+    // Add buildType to version name so that we can distinguish them in Fabric.
+    // (Modified from https://gist.github.com/keyboardsurfer/a6a5bcf2b62f9aa41ae2)
+    libraryVariants.all { variant ->
+        def versionSuffix = variant.properties['buildType'].name;
+        if (localProperties['isSnapshot'] == 'true') {
+            versionSuffix += '-snapshot'
+        }
+
+        //def versionSuffix = '-pre-BetaRelease'
+        variant.mergedFlavor.versionName = "${versionMajor}.${versionMinor}.${versionPatch}" + versionSuffix;
+    }
+
+    packagingOptions {
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/NOTICE.txt'
+        exclude 'META-INF/DEPENDENCIES'
+    }
+
+    compileOptions {
+        encoding "UTF-8"
+        sourceCompatibility JavaVersion.VERSION_1_7
+        targetCompatibility JavaVersion.VERSION_1_7
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+
+    signingConfigs {
+        release {
+            // TODO: Use real file in release.
+            storeFile file(System.properties['user.home'] + '/.android/debug.keystore')
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+            storePassword 'android'
+        }
+        debug {
+            // This key is created automatically by Android Studio.
+            storeFile file(System.properties['user.home'] + '/.android/debug.keystore')
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+            storePassword 'android'
+        }
+    }
+
+    buildTypes {
+        buildTypes.all { buildType ->
+            buildConfigField "int", "VOLLEY_CACHE_SIZE", '15 * 1024 * 1024'
+            // Note: minifiying is done by app.
+        }
+    }
+}
+
+dependencies {
+    // Note: Please use exact versions of 3rd party libraries and update manually as desired using this command:
+    //       ./gradlew dependencyUpdates -Drevision=release # See http://stackoverflow.com/a/29492062
+    compile 'com.android.support:appcompat-v7:22.2.1'
+    compile 'com.google.code.gson:gson:2.1'
+    // For Validate and ToStringBuilder
+    compile 'org.apache.commons:commons-lang3:3.1'
+    // Volley for HTTP networking
+    compile 'com.mcxiaoke.volley:library:1.0.19'
+    debugCompile 'com.android.support:multidex:1.0.0'
+}
+
+
