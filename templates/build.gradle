@@ -3,7 +3,7 @@ apply plugin: 'com.android.library'
 android {
 
     compileSdkVersion 22
-    buildToolsVersion "22.0.1"
+    buildToolsVersion "23.0.0"
 
     Properties localProperties = new Properties()
     localProperties.load(project.rootProject.file('local.properties').newDataInputStream())
@@ -13,7 +13,7 @@ android {
     // Note: When not using the build server ensure that wear project has same version number.
     def versionPatch = localProperties.get('versionPatch', '0')
     defaultConfig {
-        minSdkVersion 15
+        minSdkVersion 14
         targetSdkVersion 22
         // Note: The version code should only go up to 999999 (9.99.9999) to allow for 4 digits for multiple APK
         //       deployments in case we need them one day.
