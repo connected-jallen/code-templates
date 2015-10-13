@@ -6,13 +6,13 @@ import android.support.v4.app.Fragment;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.Cache;
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.NetworkResponse;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.HttpHeaderParser;
-
 import com.connectedlab.templates.R;
 import com.connectedlab.templates.error.ErrorInfo;
 import com.connectedlab.templates.logging.LogUtil;
@@ -52,6 +52,7 @@ public abstract class VolleyRequestBase<T> implements AsyncRequest<T> {
     private AsyncListenerModel<T> mListeners = new AsyncListenerModel<T>();
     private List<String> mFields = new ArrayList<String>();
     private WeakReference<Fragment> mCancelIfFinished;
+    private int mRequestTimeout = 20000;
 
     public VolleyRequestBase(BaseUrl baseUrl, String path, RequestQueue queue) {
         Validate.notNull(baseUrl, "baseUrl");
@@ -59,6 +60,10 @@ public abstract class VolleyRequestBase<T> implements AsyncRequest<T> {
         mBaseUrl = baseUrl;
         mQueue = queue;
         mPath = path;
+    }
+
+    public void setRequestTimeout(int timeout){
+        this.mRequestTimeout = timeout;
     }
 
     @Override
@@ -112,7 +117,7 @@ public abstract class VolleyRequestBase<T> implements AsyncRequest<T> {
                 notifyError(error);
             }
         };
-        LogUtil.d("Requesting method %s URL %s", getMethod(), getUrl(true));
+//        LogUtil.d("Requesting method %s URL %s", getMethod(), getUrl(true));
         final String url = getUrl(getMethod() == Request.Method.GET);
         Request<T> request = new Request<T>(getMethod(), url, onError) {
             private byte[] mLastNotifiedData = null;
@@ -125,6 +130,20 @@ public abstract class VolleyRequestBase<T> implements AsyncRequest<T> {
             @Override
             public Map<String, String> getParams() throws AuthFailureError {
                 return VolleyRequestBase.this.getParams();
+            }
+
+            @Override
+            public byte[] getBody() throws AuthFailureError {
+                if (VolleyRequestBase.this.getRequestBody() == null) {
+                    return super.getBody();
+                }
+                else {
+                    try {
+                        return VolleyRequestBase.this.getRequestBody().getBytes("UTF-8");
+                    } catch (UnsupportedEncodingException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
             }
 
             @Override
@@ -162,7 +181,18 @@ public abstract class VolleyRequestBase<T> implements AsyncRequest<T> {
             request.setShouldCache(false);
         }
         // Note: Volley by default uses DefaultRetryPolicy with one retry.
+        request.setRetryPolicy(new DefaultRetryPolicy(
+                mRequestTimeout,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
         mQueue.add(request);
+    }
+
+    /**
+     * @return Request body for POST or PUT, or null if getParams() is going to be used.
+     */
+    protected String getRequestBody() {
+        return null;
     }
 
     protected boolean isErrorLoggable(VolleyError error) {
@@ -279,6 +309,7 @@ public abstract class VolleyRequestBase<T> implements AsyncRequest<T> {
         ErrorInfo.Builder builder = new ErrorInfo.Builder();
         Bundle data = new Bundle();
         if (error.networkResponse != null) {
+            builder.setDebugMessage("Server error");
             builder.setErrorCode(R.id.errorCode_serverError);
             data.putInt("statusCode", error.networkResponse.statusCode);
             data.putByteArray("data", error.networkResponse.data);
@@ -289,6 +320,7 @@ public abstract class VolleyRequestBase<T> implements AsyncRequest<T> {
             data.putLong("networkTimeMs", error.networkResponse.networkTimeMs);
         }
         else {
+            builder.setDebugMessage("Connection error");
             builder.setErrorCode(R.id.errorCode_noConnection);
         }
         data.putSerializable("exceptionClass", error.getClass());
@@ -312,7 +344,7 @@ public abstract class VolleyRequestBase<T> implements AsyncRequest<T> {
 
     protected Map<String, String> getParams() {
         Map<String, String> params = new HashMap<String, String>(mBaseUrl.getQueryParams());
-        if (!mFields.isEmpty()) {
+        if (mFields != null && !mFields.isEmpty()) {
             params.put("fields", StringUtils.join(mFields, "|"));
         }
         return params;
