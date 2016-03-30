@@ -11,25 +11,15 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
 public class ThreadPoolManager {
-    private ExecutorService service;
 
-    private ThreadPoolManager() {
-        service = Executors.newFixedThreadPool(1);
-    }
-
-    private static final ThreadPoolManager manager = new ThreadPoolManager();
-    private static ExecutorService mWorkPool;
+    private static ThreadPool mWorkPool;
     private static ScheduledExecutorService mScheduledPool;
-
-    public static ThreadPoolManager getInstance() {
-        return manager;
-    }
 
     /**
      * @return Thread Pool that can be used for any worker tasks.
      * @see java.util.concurrent.Executors#newCachedThreadPool()
      */
-    public static synchronized ExecutorService getWorkPool(){
+    public static synchronized ThreadPool getWorkPool(){
         if (mWorkPool == null) {
             mWorkPool = new ThreadPool(0, Integer.MAX_VALUE,
                     60L, TimeUnit.SECONDS,
@@ -61,10 +51,6 @@ public class ThreadPoolManager {
             };
         }
         return mScheduledPool;
-    }
-
-    public void addTask(Runnable runnable) {
-        service.execute(runnable);
     }
 
 }

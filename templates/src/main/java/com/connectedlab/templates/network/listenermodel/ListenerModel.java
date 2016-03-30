@@ -24,6 +24,10 @@ public class ListenerModel<T> implements PostableContainer {
     public ListenerModel() {
     }
 
+    public void setPostable(Postable postable) {
+        mPostable = postable;
+    }
+
     /**
      * @param listener Listener to add. No-op if listener has already been added.
      * @return {@code true} if this set is modified, {@code false} otherwise.

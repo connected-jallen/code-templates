@@ -2,6 +2,7 @@ package com.connectedlab.templates.network.volley;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Looper;
 import android.support.v4.app.Fragment;
 
 import com.android.volley.AuthFailureError;
@@ -14,6 +15,7 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.HttpHeaderParser;
 import com.connectedlab.templates.R;
+import com.connectedlab.templates.error.AppException;
 import com.connectedlab.templates.error.ErrorInfo;
 import com.connectedlab.templates.logging.LogUtil;
 import com.connectedlab.templates.network.listenermodel.AsyncListener;
@@ -25,6 +27,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.io.UnsupportedEncodingException;
 import java.lang.ref.WeakReference;
@@ -38,11 +41,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Base class for every HTTP request that will be made. Every request will have its own class.
  */
 public abstract class VolleyRequestBase<T> implements AsyncRequest<T> {
+
+    /**
+     * ErrorInfo.contextData String value for HTTP Status code.
+     */
+    private static final String STATUS_CODE = "statusCode";
+    private static final String DATA = "data";
+    private static final String HEADERS = "headers";
+    private static final String NOT_MODIFIED = "notModified";
+    private static final String NETWORK_TIME_MS = "networkTimeMs";
+    private static final String EXCEPTION_CLASS = "exceptionClass";
+    private static final String URL = "url";
+    private static final String STACKTRACE = "stackTrace";
 
     private final BaseUrl mBaseUrl;
 
@@ -62,7 +79,11 @@ public abstract class VolleyRequestBase<T> implements AsyncRequest<T> {
         mPath = path;
     }
 
-    public void setRequestTimeout(int timeout){
+    public AsyncListenerModel<T> getListeners() {
+        return mListeners;
+    }
+
+    public void setRequestTimeout(int timeout) {
         this.mRequestTimeout = timeout;
     }
 
@@ -90,8 +111,7 @@ public abstract class VolleyRequestBase<T> implements AsyncRequest<T> {
             if (mBaseUrl.getBaseUrl().endsWith("/") && mPath.startsWith("/")) {
                 // Some web servers cannot handle duplicate slashes
                 url.append(mPath.substring(1));
-            }
-            else {
+            } else {
                 url.append(mPath);
             }
         }
@@ -106,6 +126,10 @@ public abstract class VolleyRequestBase<T> implements AsyncRequest<T> {
 
     @Override
     public void execute() {
+        executeAsync();
+    }
+
+    private void executeAsync(){
         Response.ErrorListener onError = new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
@@ -136,8 +160,7 @@ public abstract class VolleyRequestBase<T> implements AsyncRequest<T> {
             public byte[] getBody() throws AuthFailureError {
                 if (VolleyRequestBase.this.getRequestBody() == null) {
                     return super.getBody();
-                }
-                else {
+                } else {
                     try {
                         return VolleyRequestBase.this.getRequestBody().getBytes("UTF-8");
                     } catch (UnsupportedEncodingException ex) {
@@ -159,8 +182,7 @@ public abstract class VolleyRequestBase<T> implements AsyncRequest<T> {
             protected void deliverResponse(T response) {
                 try {
                     notifySuccess(response);
-                }
-                catch (Exception ex) {
+                } catch (Exception ex) {
                     if (isFinished()) {
                         LogUtil.d("Activity has already finished, not showing error", ex);
                         return;
@@ -288,11 +310,9 @@ public abstract class VolleyRequestBase<T> implements AsyncRequest<T> {
         if (isFinished()) {
             LogUtil.d("Activity has already finished, not showing error", error);
             return;
-        }
-        else if (error instanceof VolleyErrorInfo) {
+        } else if (error instanceof VolleyErrorInfo) {
             info = ((VolleyErrorInfo) error).getError();
-        }
-        else {
+        } else {
             info = vollyErrorToErrorInfo(error);
         }
         try {
@@ -303,6 +323,9 @@ public abstract class VolleyRequestBase<T> implements AsyncRequest<T> {
         }
     }
 
+    /**
+     * @return ErrorInfo.getContextData().getString("statusCode")
+     */
     private ErrorInfo vollyErrorToErrorInfo(VolleyError error) {
         // Serialize VolleyError into a Bundle rather than using it directly as it contains NetworkResponse which is
         // not serializable.
@@ -311,21 +334,20 @@ public abstract class VolleyRequestBase<T> implements AsyncRequest<T> {
         if (error.networkResponse != null) {
             builder.setDebugMessage("Server error");
             builder.setErrorCode(R.id.errorCode_serverError);
-            data.putInt("statusCode", error.networkResponse.statusCode);
-            data.putByteArray("data", error.networkResponse.data);
+            data.putInt(STATUS_CODE, error.networkResponse.statusCode);
+            data.putByteArray(DATA, error.networkResponse.data);
             if (error.networkResponse.headers != null) {
-                data.putSerializable("headers", new HashMap<String, String>(error.networkResponse.headers));
+                data.putSerializable(HEADERS, new HashMap<String, String>(error.networkResponse.headers));
             }
-            data.getBoolean("notModified", error.networkResponse.notModified);
-            data.putLong("networkTimeMs", error.networkResponse.networkTimeMs);
-        }
-        else {
+            data.getBoolean(NOT_MODIFIED, error.networkResponse.notModified);
+            data.putLong(NETWORK_TIME_MS, error.networkResponse.networkTimeMs);
+        } else {
             builder.setDebugMessage("Connection error");
             builder.setErrorCode(R.id.errorCode_noConnection);
         }
-        data.putSerializable("exceptionClass", error.getClass());
-        data.putString("stackTrace", ExceptionUtils.getStackTrace(error));
-        data.putString("url", getUrl(true));
+        data.putSerializable(EXCEPTION_CLASS, error.getClass());
+        data.putString(STACKTRACE, ExceptionUtils.getStackTrace(error));
+        data.putString(URL, getUrl(true));
         builder.setContextData(data);
         return builder.build();
     }
@@ -420,5 +442,40 @@ public abstract class VolleyRequestBase<T> implements AsyncRequest<T> {
         entry.responseHeaders = headers;
 
         return entry;
+    }
+
+    public T executeSync() {
+        if(Thread.currentThread() == Looper.getMainLooper().getThread()){
+            throw new RuntimeException("network call on UI Thread");
+        }
+        final MutableObject<T> res = new MutableObject<>();
+        final MutableObject<ErrorInfo> err = new MutableObject<>();
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        addListener(new AsyncListener<T>() {
+            @Override
+            public void onSuccess(Object request, T result) throws Exception {
+                res.setValue(result);
+                countDownLatch.countDown();
+                removeListener(this);
+            }
+
+            @Override
+            public void onError(Object request, ErrorInfo error) {
+                err.setValue(error);
+                countDownLatch.countDown();
+                removeListener(this);
+            }
+        });
+        executeAsync();
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException ex){
+            throw new RuntimeException("countdown", ex);
+        }
+        if (err.getValue() != null) {
+            throw new AppException(err.getValue());
+        }
+        return res.getValue();
+
     }
 }
